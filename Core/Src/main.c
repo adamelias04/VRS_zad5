@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "hts221.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,7 +95,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-
+  if(hts221_init(i2c_read, i2c_write))
+          USART2_SendString("HTS221 init error\r\n");
+  else
+          USART2_SendString("HTS221 init OK\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,21 +110,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  char msg[64];
-	 	          uint8_t id;
 
-	 	          if(i2c_read(0x5F, 0x0F, &id, 1) == 0)
-	 	                  sprintf(msg, "HTS221  WHO_AM_I: 0x%02X (expected 0xBC)\r\n", id);
-	 	          else
-	 	                  sprintf(msg, "HTS221  I2C error\r\n");
-	 	          USART2_SendString(msg);
+	          sprintf(msg, "T: %.1f C, H: %.0f %%\r\n", hts221_get_temperature(), hts221_get_humidity());
+	          USART2_SendString(msg);
 
-	 	          if(i2c_read(0x5D, 0x0F, &id, 1) == 0)
-	 	                  sprintf(msg, "LPS22HB WHO_AM_I: 0x%02X (expected 0xB1)\r\n", id);
-	 	          else
-	 	                  sprintf(msg, "LPS22HB I2C error\r\n");
-	 	          USART2_SendString(msg);
-
-	 	          LL_mDelay(1000);
+	          LL_mDelay(1000);
   }
   /* USER CODE END 3 */
 }
