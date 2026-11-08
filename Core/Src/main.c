@@ -21,10 +21,9 @@
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,7 +103,24 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+
     /* USER CODE BEGIN 3 */
+	  char msg[64];
+	 	          uint8_t id;
+
+	 	          if(i2c_read(0x5F, 0x0F, &id, 1) == 0)
+	 	                  sprintf(msg, "HTS221  WHO_AM_I: 0x%02X (expected 0xBC)\r\n", id);
+	 	          else
+	 	                  sprintf(msg, "HTS221  I2C error\r\n");
+	 	          USART2_SendString(msg);
+
+	 	          if(i2c_read(0x5D, 0x0F, &id, 1) == 0)
+	 	                  sprintf(msg, "LPS22HB WHO_AM_I: 0x%02X (expected 0xB1)\r\n", id);
+	 	          else
+	 	                  sprintf(msg, "LPS22HB I2C error\r\n");
+	 	          USART2_SendString(msg);
+
+	 	          LL_mDelay(1000);
   }
   /* USER CODE END 3 */
 }

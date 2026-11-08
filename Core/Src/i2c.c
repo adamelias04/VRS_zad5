@@ -21,7 +21,21 @@
 #include "i2c.h"
 
 /* USER CODE BEGIN 0 */
+#define I2C_TIMEOUT 10000
+static uint8_t i2c_error(void)
+{
+        if(!LL_I2C_IsActiveFlag_NACK(I2C1))
+        {
+                LL_I2C_GenerateStopCondition(I2C1);
+        }
 
+        uint32_t timeout = I2C_TIMEOUT;
+        while(!LL_I2C_IsActiveFlag_STOP(I2C1) && --timeout);
+
+        LL_I2C_ClearFlag_NACK(I2C1);
+        LL_I2C_ClearFlag_STOP(I2C1);
+        return 1;
+}
 /* USER CODE END 0 */
 
 /* I2C1 init function */
@@ -82,6 +96,74 @@ void MX_I2C1_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
+uint8_t i2c_read(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t len)
+{
+        uint32_t timeout;
 
+        LL_I2C_HandleTransfer(I2C1, dev_addr << 1, LL_I2C_ADDRSLAVE_7BIT, 1,
+                                                  LL_I2C_MODE_SOFTEND, LL_I2C_GENERATE_START_WRITE);
+
+        timeout = I2C_TIMEOUT;
+        while(!LL_I2C_IsActiveFlag_TXIS(I2C1))
+        {
+                if(LL_I2C_IsActiveFlag_NACK(I2C1) || --timeout == 0) return i2c_error();
+        }
+        LL_I2C_TransmitData8(I2C1, reg);
+
+        timeout = I2C_TIMEOUT;
+        while(!LL_I2C_IsActiveFlag_TC(I2C1))
+        {
+                if(LL_I2C_IsActiveFlag_NACK(I2C1) || --timeout == 0) return i2c_error();
+        }
+
+        LL_I2C_HandleTransfer(I2C1, dev_addr << 1, LL_I2C_ADDRSLAVE_7BIT, len,
+                                                  LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_READ);
+
+        for(uint8_t i = 0; i < len; i++)
+        {
+                timeout = I2C_TIMEOUT;
+                while(!LL_I2C_IsActiveFlag_RXNE(I2C1))
+                {
+                        if(--timeout == 0) return i2c_error();
+                }
+                data[i] = LL_I2C_ReceiveData8(I2C1);
+        }
+
+        timeout = I2C_TIMEOUT;
+        while(!LL_I2C_IsActiveFlag_STOP(I2C1))
+        {
+                if(--timeout == 0) return i2c_error();
+        }
+        LL_I2C_ClearFlag_STOP(I2C1);
+
+        return 0;
+}
+
+uint8_t i2c_write(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t len)
+{
+        uint32_t timeout;
+
+        LL_I2C_HandleTransfer(I2C1, dev_addr << 1, LL_I2C_ADDRSLAVE_7BIT, len + 1,
+                                                  LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_WRITE);
+
+        for(uint8_t i = 0; i <= len; i++)
+        {
+                timeout = I2C_TIMEOUT;
+                while(!LL_I2C_IsActiveFlag_TXIS(I2C1))
+                {
+                        if(LL_I2C_IsActiveFlag_NACK(I2C1) || --timeout == 0) return i2c_error();
+                }
+                LL_I2C_TransmitData8(I2C1, (i == 0) ? reg : data[i - 1]);
+        }
+
+        timeout = I2C_TIMEOUT;
+        while(!LL_I2C_IsActiveFlag_STOP(I2C1))
+        {
+                if(LL_I2C_IsActiveFlag_NACK(I2C1) || --timeout == 0) return i2c_error();
+        }
+        LL_I2C_ClearFlag_STOP(I2C1);
+
+        return 0;
+}
 /* USER CODE END 1 */
 
