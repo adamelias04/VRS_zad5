@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "hts221.h"
+#include "lps22hb.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -99,6 +101,20 @@ int main(void)
           USART2_SendString("HTS221 init error\r\n");
   else
           USART2_SendString("HTS221 init OK\r\n");
+
+  if(lps22hb_init(i2c_read, i2c_write))
+            USART2_SendString("LPS22HB init error\r\n");
+    else
+            USART2_SendString("LPS22HB init OK\r\n");
+
+    LL_mDelay(2000);
+    float p0 = 0.0f;
+    for(uint8_t i = 0; i < 10; i++)
+    {
+            p0 += lps22hb_get_pressure();
+            LL_mDelay(100);
+    }
+    lps22hb_set_reference_pressure(p0 / 10.0f);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,13 +125,16 @@ int main(void)
 
 
     /* USER CODE BEGIN 3 */
-	  char msg[64];
+	  char msg[96];
+	          float pressure = lps22hb_get_pressure();
 
-	          sprintf(msg, "T: %.1f C, H: %.0f %%\r\n", hts221_get_temperature(), hts221_get_humidity());
+	          sprintf(msg, "T: %.1f C, H: %.0f %%, P: %.2f hPa, h: %.2f m\r\n",
+	                          hts221_get_temperature(), hts221_get_humidity(),
+	                          pressure, lps22hb_calc_altitude(pressure));
 	          USART2_SendString(msg);
 
-	          LL_mDelay(1000);
-  }
+	          LL_mDelay(500);
+	    }
   /* USER CODE END 3 */
 }
 
