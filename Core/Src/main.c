@@ -98,14 +98,10 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   if(hts221_init(i2c_read, i2c_write))
-          USART2_SendString("HTS221 init error\r\n");
-  else
-          USART2_SendString("HTS221 init OK\r\n");
+            USART2_SendString("HTS221 init error\r\n");
 
-  if(lps22hb_init(i2c_read, i2c_write))
+    if(lps22hb_init(i2c_read, i2c_write))
             USART2_SendString("LPS22HB init error\r\n");
-    else
-            USART2_SendString("LPS22HB init OK\r\n");
 
     LL_mDelay(2000);
     float p0 = 0.0f;
@@ -125,15 +121,16 @@ int main(void)
 
 
     /* USER CODE BEGIN 3 */
-	  char msg[96];
+	  char msg[48];
+	          float temperature = hts221_get_temperature();
+	          float humidity = hts221_get_humidity();
 	          float pressure = lps22hb_get_pressure();
+	          float altitude = lps22hb_calc_altitude(pressure);
 
-	          sprintf(msg, "T: %.1f C, H: %.0f %%, P: %.2f hPa, h: %.2f m\r\n",
-	                          hts221_get_temperature(), hts221_get_humidity(),
-	                          pressure, lps22hb_calc_altitude(pressure));
+	          sprintf(msg, "%04.1f,%02.0f,%07.2f,%06.2f\r\n", temperature, humidity, pressure, altitude);
 	          USART2_SendString(msg);
 
-	          LL_mDelay(500);
+	          LL_mDelay(100);
 	    }
   /* USER CODE END 3 */
 }
